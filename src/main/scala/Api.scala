@@ -1,12 +1,12 @@
-import KafkaClientActor.{Command, DescribeKafkaCluster, DescribeKafkaClusterConsumer}
+import KafkaClientActor.{Command, DescribeKafkaClusterConsumer}
 import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
+import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.Config
-import akka.pattern.ask
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -26,16 +26,8 @@ class Api(kafkaClientActorRef: ActorRef)(implicit actorSystem: ActorSystem, mate
     redirectToNoTrailingSlashIfPresent(StatusCodes.Found) {
       path("health") {
         complete("OK")
-      } ~ pathPrefix("kafka" / Segment) { clusterName: String =>
-        pathEnd {
-          complete(askFor[String](DescribeKafkaCluster(clusterName)))
-        } ~ pathPrefix("consumer") {
-          pathEnd {
-            complete("consumer cluster")
-          } ~ path(Segment) { consumerGroup =>
-            complete(askFor[String](DescribeKafkaClusterConsumer(clusterName, consumerGroup)))
-          }
-        }
+      } ~ path("consumer" / Segment) { consumerGroup =>
+        complete(askFor[String](DescribeKafkaClusterConsumer(consumerGroup)))
       }
     }
 

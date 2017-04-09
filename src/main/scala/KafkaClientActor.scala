@@ -1,21 +1,24 @@
-import KafkaClientActor.{DescribeKafkaCluster, DescribeKafkaClusterConsumer}
+import KafkaClientActor.DescribeKafkaClusterConsumer
 import akka.actor.{Actor, ActorLogging, Props}
+import kafka.admin.ConsumerGroupCommand.ConsumerGroupCommandOptions
 
 object KafkaClientActor {
 
   sealed trait Command
 
-  case class DescribeKafkaCluster(clusterName: String) extends Command
-  case class DescribeKafkaClusterConsumer(clusterName: String, consumerGroupName: String) extends Command
+  case class DescribeKafkaClusterConsumer(consumerGroupName: String) extends Command
 
-  def props(kafkaSettings: KafkaSettings) = Props(classOf[KafkaClientActor], kafkaSettings)
+  def props(kafkaConsumerGroupService: RemoraKafkaConsumerGroupService) = Props(classOf[KafkaClientActor], kafkaConsumerGroupService)
 
 }
 
-class KafkaClientActor(kafkaSettings: KafkaSettings) extends Actor with ActorLogging {
+class KafkaClientActor(kafkaSettings: Array[String]) extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case DescribeKafkaCluster(clusterName) => sender() ! clusterName
-    case DescribeKafkaClusterConsumer(clusterName, consumerGroupName) => sender() ! consumerGroupName
+
+    case DescribeKafkaClusterConsumer(consumerGroupName) =>
+      val settings = kafkaSettings.clone()
+      val opts = new ConsumerGroupCommandOptions(kafkaSettings)
+      sender() ! consumerGroupName
   }
 }

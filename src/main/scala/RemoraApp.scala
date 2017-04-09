@@ -9,7 +9,8 @@ object RemoraApp extends App {
   implicit val actorMaterializer = ActorMaterializer()
 
   val kafkaSettings = KafkaSettings(actorSystem.settings.config)
-  val kafkaClientActor = actorSystem.actorOf(KafkaClientActor.props(kafkaSettings), name = "kafka-client-actor")
+  val consumer = new RemoraKafkaConsumerGroupService(kafkaSettings)
+  val kafkaClientActor = actorSystem.actorOf(KafkaClientActor.props(consumer), name = "kafka-client-actor")
 
   Api(kafkaClientActor).start()
 
