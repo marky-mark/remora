@@ -1,14 +1,17 @@
-import akka.actor.ActorSystem
+import KafkaClientActor.{Command, DescribeKafkaCluster, DescribeKafkaClusterConsumer}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.Config
+import akka.pattern.ask
 
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
-class Api()(implicit actorSystem: ActorSystem, materializer: ActorMaterializer) {
+class Api(kafkaClientActorRef: ActorRef)(implicit actorSystem: ActorSystem, materializer: ActorMaterializer) {
 
   import actorSystem.dispatcher
 
@@ -16,18 +19,21 @@ class Api()(implicit actorSystem: ActorSystem, materializer: ActorMaterializer) 
 
   val settings = ApiSettings(actorSystem.settings.config)
 
+  private def askFor[RES](command: Command)(implicit tag: ClassTag[RES]) =
+    (kafkaClientActorRef ? command).mapTo[RES]
+
   val route =
     redirectToNoTrailingSlashIfPresent(StatusCodes.Found) {
       path("health") {
         complete("OK")
       } ~ pathPrefix("kafka" / Segment) { clusterName: String =>
         pathEnd {
-          complete(clusterName)
+          complete(askFor[String](DescribeKafkaCluster(clusterName)))
         } ~ pathPrefix("consumer") {
           pathEnd {
             complete("consumer cluster")
           } ~ path(Segment) { consumerGroup =>
-            complete(consumerGroup)
+            complete(askFor[String](DescribeKafkaClusterConsumer(clusterName, consumerGroup)))
           }
         }
       }
@@ -37,7 +43,7 @@ class Api()(implicit actorSystem: ActorSystem, materializer: ActorMaterializer) 
 }
 
 object Api {
-  def apply()(implicit actorSystem: ActorSystem, actorMaterializer: ActorMaterializer) = new Api()
+  def apply(kafkaClientActorRef: ActorRef)(implicit actorSystem: ActorSystem, actorMaterializer: ActorMaterializer) = new Api(kafkaClientActorRef)
 }
 
 case class ApiSettings(port: Int)

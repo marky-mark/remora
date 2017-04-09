@@ -34,6 +34,7 @@ libraryDependencies ++= Seq(
   "org.apache.httpcomponents" %  "httpcore"                     % "4.4.5",
   "org.apache.httpcomponents" %  "httpclient"                   % "4.5.2",
   "org.scalaz"                %% "scalaz-core"                  % "7.2.8",
+  "org.apache.kafka"          %  "kafka-clients"                % "0.10.1.1",
   "com.typesafe.akka"         %% "akka-testkit"                 % "2.4.16"  % "test",
   "org.scalatest"             %% "scalatest"                    % "2.2.4"   % "test",
   "org.scalamock"             %% "scalamock-scalatest-support"  % "3.2"     % "test"
