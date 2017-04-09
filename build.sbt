@@ -26,19 +26,11 @@ lazy val root = (project in file("."))
     JavaServerAppPackaging
   )
 
-resolvers ++= Seq(
-  "JBoss Releases" at "https://repository.jboss.org/nexus/content/repositories/releases"
-)
-
 libraryDependencies ++= Seq(
   "ch.qos.logback"            %  "logback-classic"              % "1.1.8",
-  "io.dropwizard.metrics"     %  "metrics-core"                 % "3.1.2",
-  "io.dropwizard.metrics"     %  "metrics-jvm"                  % "3.1.2",
-  "io.dropwizard.metrics"     %  "metrics-json"                 % "3.1.2",
   "com.typesafe.akka"         %% "akka-actor"                   % "2.4.16",
-  "com.typesafe.akka"         %% "akka-http"                    % "10.0.1",
+  "com.typesafe.akka"         %% "akka-http"                    % "10.0.5",
   "com.typesafe.akka"         %% "akka-slf4j"                   % "2.4.16",
-  "com.typesafe.play"         %% "play-ws"                      % "2.4.8",
   "org.apache.httpcomponents" %  "httpcore"                     % "4.4.5",
   "org.apache.httpcomponents" %  "httpclient"                   % "4.5.2",
   "org.scalaz"                %% "scalaz-core"                  % "7.2.8",
