@@ -41,36 +41,31 @@ class RemoraKafkaConsumerGroupService(kafkaSettings: KafkaSettings) {
   }
 
   //looking at future versions of describeConsumerGroup this will have to change dramatically
-  def describeConsumerGroup(group: String) = {
+  def describeConsumerGroup(group: String): List[GroupInfo] = {
     val consumerSummaries = adminClient.describeConsumerGroup(group)
-    if (consumerSummaries.isEmpty)
-      println(s"Consumer group `$group` does not exist or is rebalancing.")
-    else {
-      implicit val consumer = createNewConsumer(group)
-      consumerSummaries.foreach { consumerSummary =>
-        val topicPartitions = consumerSummary.assignment.map(tp => TopicAndPartition(tp.topic, tp.partition))
-        val partitionOffsets = topicPartitions.flatMap { topicPartition =>
-          Option(consumer.committed(new TopicPartition(topicPartition.topic, topicPartition.partition))).map { offsetAndMetadata =>
-            topicPartition -> offsetAndMetadata.offset
-          }
-        }.toMap
+    implicit val consumer = createNewConsumer(group)
+    consumerSummaries.flatMap { consumerSummary =>
+      val topicPartitions = consumerSummary.assignment.map(tp => TopicAndPartition(tp.topic, tp.partition))
+      val partitionOffsets = topicPartitions.flatMap { topicPartition =>
+        Option(consumer.committed(new TopicPartition(topicPartition.topic, topicPartition.partition))).map { offsetAndMetadata =>
+          topicPartition -> offsetAndMetadata.offset
+        }
+      }.toMap
 
-        topicPartitions.sortBy { case topicPartition => topicPartition.partition }
+      topicPartitions.sortBy { case topicPartition => topicPartition.partition }
 
-        describeTopicPartition(group, topicPartitions, partitionOffsets.get,
-          _ => Some(s"${consumerSummary.clientId}_${consumerSummary.clientHost}"))
-      }
+      describeTopicPartition(group, topicPartitions, partitionOffsets.get, _ => Some(s"${consumerSummary.clientId}_${consumerSummary.clientHost}"))
     }
   }
 
   private def describeTopicPartition(group: String,
-                                       topicPartitions: Seq[TopicAndPartition],
-                                       getPartitionOffset: TopicAndPartition => Option[Long],
-                                       getOwner: TopicAndPartition => Option[String])
-                                    (implicit consumer: KafkaConsumer[String, String]): Unit = {
+                                     topicPartitions: Seq[TopicAndPartition],
+                                     getPartitionOffset: TopicAndPartition => Option[Long],
+                                     getOwner: TopicAndPartition => Option[String])
+                                    (implicit consumer: KafkaConsumer[String, String]): Seq[GroupInfo] = {
     topicPartitions
       .sortBy { case topicPartition => topicPartition.partition }
-      .foreach { topicPartition =>
+      .flatMap { topicPartition =>
         describePartition(group, topicPartition.topic, topicPartition.partition, getPartitionOffset(topicPartition),
           getOwner(topicPartition))
       }
@@ -90,19 +85,22 @@ class RemoraKafkaConsumerGroupService(kafkaSettings: KafkaSettings) {
                                 partition: Int,
                                 offsetOpt: Option[Long],
                                 ownerOpt: Option[String])
-                               (implicit consumer: KafkaConsumer[String, String]){
-    def print(logEndOffset: Option[Long]): Unit = {
+                               (implicit consumer: KafkaConsumer[String, String]): Option[GroupInfo] = {
+    def convert(logEndOffset: Option[Long]): GroupInfo = {
       val lag = offsetOpt.filter(_ != -1).flatMap(offset => logEndOffset.map(_ - offset))
-      println("%-30s %-30s %-10s %-15s %-15s %-15s %s".format(group, topic, partition, offsetOpt.getOrElse("unknown"), logEndOffset.getOrElse("unknown"), lag.getOrElse("unknown"), ownerOpt.getOrElse("none")))
+      GroupInfo(group, topic, partition, offsetOpt, logEndOffset, lag, ownerOpt)
     }
     getLogEndOffset(topic, partition) match {
-      case LogEndOffsetResult.LogEndOffset(logEndOffset) => print(Some(logEndOffset))
-      case LogEndOffsetResult.Unknown => print(None)
-      case LogEndOffsetResult.Ignore =>
+      case LogEndOffsetResult.LogEndOffset(logEndOffset) => Some(convert(Some(logEndOffset)))
+      case LogEndOffsetResult.Unknown => None
+      case LogEndOffsetResult.Ignore => None
     }
   }
+
+  case class GroupInfo(group: String, topic: String, partition: Int, offsetOpt: Option[Long], logEndOffset: Option[Long], lag: Option[Long], ownerOpt: Option[String])
+
 }
 
 object Test extends App {
-  new RemoraKafkaConsumerGroupService(new KafkaSettings("localhost:9092")).describeConsumerGroup("console-consumer-41109")
+  print(new RemoraKafkaConsumerGroupService(new KafkaSettings("localhost:9092")).describeConsumerGroup("console-consumer-41109"))
 }
