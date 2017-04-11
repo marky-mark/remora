@@ -17,6 +17,9 @@ console-consumer-96416         test                           0          3      
 console-consumer-96416         test                           1          4               4               0               consumer-1_/192.168.0.102
 *
 * */
+
+case class GroupInfo(group: String, topic: String, partition: Int, offsetOpt: Option[Long], logEndOffset: Option[Long], lag: Option[Long], ownerOpt: Option[String])
+
 class RemoraKafkaConsumerGroupService(kafkaSettings: KafkaSettings) {
 
   private def createAdminClient(): AdminClient = {
@@ -96,9 +99,6 @@ class RemoraKafkaConsumerGroupService(kafkaSettings: KafkaSettings) {
       case LogEndOffsetResult.Ignore => None
     }
   }
-
-  case class GroupInfo(group: String, topic: String, partition: Int, offsetOpt: Option[Long], logEndOffset: Option[Long], lag: Option[Long], ownerOpt: Option[String])
-
 }
 
 object Test extends App {

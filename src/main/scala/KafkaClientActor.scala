@@ -12,13 +12,13 @@ object KafkaClientActor {
 
 }
 
-class KafkaClientActor(kafkaSettings: Array[String]) extends Actor with ActorLogging {
+class KafkaClientActor(kafkaSettings: KafkaSettings) extends Actor with ActorLogging {
+
+  private val kafkaConsumerGroupService : RemoraKafkaConsumerGroupService = new RemoraKafkaConsumerGroupService(kafkaSettings)
 
   override def receive: Receive = {
 
     case DescribeKafkaClusterConsumer(consumerGroupName) =>
-      val settings = kafkaSettings.clone()
-      val opts = new ConsumerGroupCommandOptions(kafkaSettings)
-      sender() ! consumerGroupName
+      sender() ! kafkaConsumerGroupService.describeConsumerGroup(consumerGroupName)
   }
 }
