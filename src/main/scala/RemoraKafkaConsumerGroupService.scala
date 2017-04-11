@@ -1,7 +1,7 @@
 import java.util.Properties
 
 import kafka.admin.AdminClient
-import kafka.admin.ConsumerGroupCommand.{ConsumerGroupCommandOptions, KafkaConsumerGroupService}
+import kafka.admin.ConsumerGroupCommand.{LogEndOffsetResult, ConsumerGroupCommandOptions, KafkaConsumerGroupService}
 import kafka.common.TopicAndPartition
 import org.apache.kafka.clients.CommonClientConfigs
 import org.apache.kafka.clients.consumer.{KafkaConsumer, ConsumerConfig}
@@ -74,14 +74,6 @@ class RemoraKafkaConsumerGroupService(kafkaSettings: KafkaSettings) {
         describePartition(group, topicPartition.topic, topicPartition.partition, getPartitionOffset(topicPartition),
           getOwner(topicPartition))
       }
-  }
-
-  trait LogEndOffsetResult
-
-  object LogEndOffsetResult {
-    case class LogEndOffset(value: Long) extends LogEndOffsetResult
-    case object Unknown extends LogEndOffsetResult
-    case object Ignore extends LogEndOffsetResult
   }
 
   protected def getLogEndOffset(topic: String, partition: Int)
