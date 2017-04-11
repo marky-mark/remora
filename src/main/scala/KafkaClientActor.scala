@@ -12,9 +12,7 @@ object KafkaClientActor {
 
 }
 
-class KafkaClientActor(kafkaSettings: KafkaSettings) extends Actor with ActorLogging {
-
-  private val kafkaConsumerGroupService : RemoraKafkaConsumerGroupService = new RemoraKafkaConsumerGroupService(kafkaSettings)
+class KafkaClientActor(kafkaConsumerGroupService: RemoraKafkaConsumerGroupService) extends Actor with ActorLogging {
 
   override def receive: Receive = {
 

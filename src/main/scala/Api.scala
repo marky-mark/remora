@@ -7,6 +7,8 @@ import akka.pattern.ask
 import akka.stream.ActorMaterializer
 import akka.util.Timeout
 import com.typesafe.config.Config
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -14,6 +16,7 @@ import scala.reflect.ClassTag
 class Api(kafkaClientActorRef: ActorRef)(implicit actorSystem: ActorSystem, materializer: ActorMaterializer) {
 
   import actorSystem.dispatcher
+  import JsonOps._
 
   implicit val duration: Timeout = 90.seconds
 
@@ -27,7 +30,7 @@ class Api(kafkaClientActorRef: ActorRef)(implicit actorSystem: ActorSystem, mate
       path("health") {
         complete("OK")
       } ~ path("consumer" / Segment) { consumerGroup =>
-        complete(askFor[String](DescribeKafkaClusterConsumer(consumerGroup)))
+        complete(askFor[List[GroupInfo]](DescribeKafkaClusterConsumer(consumerGroup)).map(Json.toJson(_).toString))
       }
     }
 
@@ -42,4 +45,17 @@ case class ApiSettings(port: Int)
 
 object ApiSettings {
   def apply(config: Config): ApiSettings = ApiSettings(config.getInt("api.port"))
+}
+
+object JsonOps {
+
+  implicit val currentStateWrites: Writes[GroupInfo] = (
+    (__ \ "group").write[String] and
+      (__ \ "topic").write[String] and
+      (__ \ "partition").write[Int] and
+      (__ \ "offset").writeNullable[Long] and
+      (__ \ "log_end_offset").writeNullable[Long] and
+      (__ \ "lag").writeNullable[Long] and
+      (__ \ "owner").writeNullable[String]
+    ) (unlift(GroupInfo.unapply))
 }

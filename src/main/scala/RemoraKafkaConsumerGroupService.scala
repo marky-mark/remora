@@ -18,7 +18,7 @@ console-consumer-96416         test                           1          4      
 *
 * */
 
-case class GroupInfo(group: String, topic: String, partition: Int, offsetOpt: Option[Long], logEndOffset: Option[Long], lag: Option[Long], ownerOpt: Option[String])
+case class GroupInfo(group: String, topic: String, partition: Int, offset: Option[Long] = None, logEndOffset: Option[Long] = None, lag: Option[Long] = None, owner: Option[String] = None)
 
 class RemoraKafkaConsumerGroupService(kafkaSettings: KafkaSettings) {
 
